@@ -1,8 +1,5 @@
 # scMomer
 
-
-## This repo is being updated and will be ready shortly.
-
 ## scMomer: A modality-aware pretraining framework for single-cell multi-omics modeling under missing modality conditions
 
 We develop scMomer, a modality-aware pretraining framework designed for multi-modal representation learning under missing modality conditions.
@@ -69,10 +66,41 @@ and then install the required packages below:
 
 Following scBERT, the single-cell transcriptomics test data must first be pre-processed by updating the gene symbols and then normalized using `sc.pp.normalize_total` followed by `sc.pp.log1p`; details are provided in  `preprocess.py`.
 
-### - Zero-shot embedding
+### Three step pretraining
 
+#### I. Single modality pretraining
+In the first stage, we adopt masked modeling strategies to capture intra-modality interactions (Fig. 1b,c). 
 
-### - Fine-tune for downstream tasks
+For RNA, this involves predicting the expression of masked genes based on the context of co-expressed genes within the same cell. 
+
+~~~shell
+python -m torch.distributed.run pretrain_rna.py --data_path "pretrain_data_path"
+~~~
+
+For ATAC, the model predicts the accessibility of masked chromatin patches using information from surrounding genomic regions.
+
+~~~shell
+python -m torch.distributed.run pretrain_atac.py --data_path "pretrain_data_path" 
+~~~
+
+#### II. Multimodal interaction learning
+The pretrained unimodal encoders are jointly fine-tuned using pseudo-paired RNA–ATAC profiles collected from atlas-scale datasets.
+
+~~~shell
+python -m torch.distributed.run pretrain_multimodal.py --data_path "pretrain_data_path" --atac_model_path "pretrained_atac_model_path" --rna_model_path "pretrained_rna_model_path"
+~~~
+
+#### III. Missing modality adaptation
+
+The student is trained to approximate the missing modal embeddings produced by the modality-specific encoder, enabling inference when only one modality is available.
+
+~~~shell
+python get_distill.py --data_path "pretrain_data_path" --model_path "pretrained_model_path" 
+~~~
+
+~~~shell
+python -m torch.distributed.run pretrain_missing_mod.py --data_path "pretrain_data_path" --model_path "pretrained_model_path" --distil_train "distilled_knowledge_train" --distil_val "distilled_knowledge_val"
+~~~
 
 
 ## Tutorials

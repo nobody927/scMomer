@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from model.read_data import read_data
 import argparse
-from model.multifoundation import  scPlex, Classifier
+from model.multifoundation import scMomer
 from model.atac_model import MAEConfig
 from torch.utils.data import Subset, DataLoader, Dataset
 from torch.optim import Adam, SGD, AdamW
@@ -180,28 +180,13 @@ def model_init(args):
     new_state_dict.pop('ATAC.output_mean.0.bias')
     model.load_state_dict(new_state_dict, strict=False)
 
-    # for param in model.parameters():
-    #     param.requires_grad = False
-    # for param in model.to_out.parameters():
-    #     param.requires_grad = True
     for param in model.rna_model.model.performer.parameters():
         param.requires_grad = False
-    # for param in model.rna_model.model.norm.parameters():
-    #     param.requires_grad = True
     for param in model.rna_model.model.performer.net.layers[-2].parameters():
         param.requires_grad = True
     for param in model.rna_model.model.performer.net.layers[-1].parameters():
         param.requires_grad = True
-    # for param in model.rna_model.model.to_out.parameters():
-    #     param.requires_grad = True
-    # for param in model.rna_model.model.norm.parameters():
-    #     param.requires_grad = True
-    # for param in model.rna_projection.parameters():
-    #     param.requires_grad = True
-    # for param in model.ATAC.parameters():
-    #     param.requires_grad = True
-    # for param in model.RNA.parameters():
-    #     param.requires_grad = True
+
 
     model.sub_task = Classifier(class_num=train_label_dict.shape[0])
 
@@ -251,26 +236,10 @@ def training(args, model, optimizer, train_loader, val_loader, fold, name):
             # truths.append(labels)
             running_loss += loss.item()
             ProgressBar.set_postfix(loss=loss.item())
-            # softmax = nn.Softmax(dim=-1)
-            # final_prob = softmax(logits)
-            # final = final_prob.argmax(dim=-1)
-            # pred_num = labels.size(0)
-            # correct_num = torch.eq(final, labels).sum(dim=-1)
-            # final[np.amax(np.array(final_prob.cpu().detach().numpy()), axis=-1) < 0] = -1
-            # final[np.amax(np.array(final_prob.cpu()), axis=-1) < 0] = -1
-            # predictions.append(final)
-            # cum_acc += torch.true_divide(correct_num, pred_num).mean().item()
-            # index += 1
-        # predictions = distributed_concat(torch.cat(predictions, dim=0), len(train_loader.dataset), world_size)
-        # truths = distributed_concat(torch.cat(truths, dim=0), len(train_loader.dataset), world_size)
-        # index += 1
         epoch_loss = running_loss / index
         epoch_loss = get_reduced(epoch_loss, local_rank, 0, world_size)
         if is_master:
             print(f'    ==  Dataset: {name} | Fold: {fold} Epoch: {i} | Training Loss: {epoch_loss:.6f} ')
-            # print(confusion_matrix(truths, predictions))
-            # print(classification_report(truths, predictions, labels=range(len(label_dict)), zero_division=0,
-            #                             target_names=label_dict.tolist(), digits=len(label_dict)))
         dist.barrier()
         scheduler.step()
 
@@ -297,9 +266,6 @@ def training(args, model, optimizer, train_loader, val_loader, fold, name):
                 val_loss = get_reduced(val_loss, local_rank, 0, world_size)
                 if is_master:
                     print(f'    ==  Dataset: {name} | Fold: {fold} Epoch: {i} | Validation Loss: {val_loss:.6f} ==')
-                    # print(confusion_matrix(truths, predictions))
-                    # print(classification_report(truths, predictions, labels=range(len(label_dict)), zero_division=0,
-                    #                             target_names=label_dict.tolist(), digits=len(label_dict)))
                     if val_loss < min_loss:
                         min_loss = val_loss
                         trigger_times = 0

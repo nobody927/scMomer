@@ -4,11 +4,6 @@
 
 We develop scMomer, a modality-aware pretraining framework designed for multi-modal representation learning under missing modality conditions.
 
-
-<p align="center">
-<img src="https://github.com/nobody927/scMomer/blob/main/fig/main.png">
-</p>
-
 **Table of Contents**
 
 * [Datasets](#Datasets)

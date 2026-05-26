@@ -1,0 +1,21 @@
+# scMomer requirements — Python 3.9
+#
+# IMPORTANT: Install PyTorch with CUDA FIRST, then install the rest:
+#
+#   pip install torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+#
+# If your CUDA is 11.8, use cu118 instead:
+#   pip install torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu118
+# torch>=2.0.0
+# torchvision>=0.15.0
+
+transformers==4.45.2
+scanpy>=1.9.0
+muon>=0.1.5
+numpy>=1.22.0,<2.0
+scipy>=1.9.0
+pandas>=1.5.0
+scikit-learn>=1.2.0
+einops>=0.6.0
+local-attention>=1.8.0

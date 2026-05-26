@@ -214,7 +214,7 @@ torchrun --nproc_per_node=4 pretrain_atac.py \
 
 ### Stage 2 — Multimodal pretraining
 
-Load S1 weights, jointly train with cross-modal contrastive learning.
+Load S1 weights, jointly train RNA and ATAC encoders with cross-modal reconstruction and adversarial alignment.
 
 ```bash
 torchrun --nproc_per_node=4 pretrain_multimodal.py \

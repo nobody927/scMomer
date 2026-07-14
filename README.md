@@ -31,7 +31,7 @@ scMomer learns multimodal-aware cell representations from scRNA-seq only input t
 **Prerequisites:** Python 3.9, CUDA 12.4
 
 ```bash
-git clone https://github.com/your-lab/scMomer.git
+git clone https://github.com/nobody927/scMomer.git
 cd scMomer
 
 conda create -n scmomer python=3.9 -y
@@ -63,6 +63,8 @@ python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA: {torch.cuda.
 ## Quick start
 
 Pretrained model and example data are available at https://drive.google.com/drive/folders/1h8tRYHYKOYeOkBj2jKr5BYxJj2SPnr_w?usp=sharing.
+
+For a simple end-to-end workflow, see [scmomer_tutorial.ipynb](scmomer_tutorial.ipynb).
 
 ### Data preprocessing
 

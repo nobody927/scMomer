@@ -18,10 +18,10 @@ from torch_geometric.utils import dense_to_sparse
 
 
 def prepare_fixed_eval_data(data_path,
-                            fraction=0.01,
+                            fraction=0.8,
                             return_mod='rna',
-                            val_ratio=0.01,
-                            test_ratio=0.01,
+                            val_ratio=0.1,
+                            test_ratio=0.1,
                             cell_type_col='rna:cell_type',
                             seed=2024):
     """

@@ -5,10 +5,6 @@ Two modes:
   1) Pre-computed embeddings (fast):  --emb_path cell_emb.npz
   2) On-the-fly inference:            --checkpoint pretrained.pth --panglao_path panglao.h5ad
 
-Architecture:
-  Cell embedding (128-dim) → Linear(128→100, trainable)  → concat (200-dim) → CNN → output
-  Drug graph → GCN → 100-dim       ──────────────────────↗
-
 Usage:
     # Mode 1: pre-computed embeddings (fast)
     python train_drug.py --data_dir ./data --emb_path cell_emb.npz --outdir ./output_drug
@@ -18,7 +14,7 @@ Usage:
         --panglao_path panglao_10000.h5ad --outdir ./output_drug
 """
 
-import os, sys, argparse, types, logging, copy
+import os, sys, json, argparse, types, logging, copy
 import numpy as np
 from scipy import stats
 
@@ -303,7 +299,7 @@ def build_parser():
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # Data
     p.add_argument("--data_dir", required=True, help="Directory with drug response data files")
-    p.add_argument("--emb_path", default='./cell_emb.npz',
+    p.add_argument("--emb_path", default=None,
                    help="Pre-computed cell embeddings .npz (Mode 1). "
                         "If not provided, use --checkpoint + --panglao_path (Mode 2).")
     p.add_argument("--panglao_path", default=None,
@@ -312,8 +308,9 @@ def build_parser():
                    help="Pretrained scMomer checkpoint (required for Mode 2)")
 
     # Task
-    p.add_argument("--classification", action="store_true", default=True,
-                   help="Classification mode (auto-loads ${data_dir}/IC50_thred.txt)")
+    p.add_argument("--classification", action=argparse.BooleanOptionalAction, default=True,
+                   help="Classification mode, auto-loads IC50_thred.txt from data_dir. "
+                        "Use --no-classification for IC50 regression.")
 
     # Training
     p.add_argument("--projection_dim", type=int, default=128)
@@ -354,6 +351,17 @@ def main():
     data_train, data_val, data_test = split_drug_data(
         data_idx, val_ratio=args.val_ratio, test_ratio=args.test_ratio, seed=args.seed)
 
+    # Persist splits so evaluate_drug.py reports on the exact same test set
+    split_path = os.path.join(args.outdir, "split.json")
+    with open(split_path, "w") as f:
+        json.dump({
+            "seed": args.seed,
+            "val_ratio": args.val_ratio,
+            "test_ratio": args.test_ratio,
+            "train": data_train, "val": data_val, "test": data_test,
+        }, f)
+    logger.info("Splits saved to %s", split_path)
+
     # ---- Mode 1: pre-computed embeddings ----
     if args.emb_path is not None:
         logger.info("Mode 1: using pre-computed embeddings from %s", args.emb_path)
@@ -367,8 +375,10 @@ def main():
         val_dataset = DrugResponseEmbDataset(data_val, drug_feature, emb_dict)
         test_dataset = DrugResponseEmbDataset(data_test, drug_feature, emb_dict)
 
+        # drop_last: BatchNorm1d in the projection crashes on batch size 1 in train mode
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
-                                  shuffle=True, collate_fn=collate_emb_batch)
+                                  shuffle=True, collate_fn=collate_emb_batch,
+                                  drop_last=len(train_dataset) > args.batch_size)
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                                 shuffle=False, collate_fn=collate_emb_batch)
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
@@ -397,8 +407,10 @@ def main():
             seed=args.seed, classification=args.classification,
             ic50_thred_file=ic50_thred_file)
 
+        # drop_last: BatchNorm1d in the projection crashes on batch size 1 in train mode
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
-                                  shuffle=True, collate_fn=collate_drug_batch)
+                                  shuffle=True, collate_fn=collate_drug_batch,
+                                  drop_last=len(train_dataset) > args.batch_size)
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size,
                                 shuffle=False, collate_fn=collate_drug_batch)
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size,

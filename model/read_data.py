@@ -235,8 +235,8 @@ def process_atac(mdata):
 
 def process_rna(mdata):
     rna = mdata.mod["rna"]
-    sc.pp.normalize_total(rna, target_sum=1e4)
-    sc.pp.log1p(rna, base=2)
+    # sc.pp.normalize_total(rna, target_sum=1e4)
+    # sc.pp.log1p(rna, base=2)
     return rna
 
 class CustomDataset(Dataset):

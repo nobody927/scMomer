@@ -25,6 +25,7 @@ import anndata as ad
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -133,7 +134,7 @@ def load_model(checkpoint_path, rna_dim, n_classes, device="cpu"):
         param.requires_grad = True
 
     # 3. Unfreeze last 2 performer layers
-    for param in model.rna_model.model.performer.net.layers[-2].parameters():
+    for param in model.rna_model.model.performer.net.layers[-2:].parameters():
         param.requires_grad = True
 
     # 4. Unfreeze to_out

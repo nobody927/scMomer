@@ -53,7 +53,8 @@ class scMomer(nn.Module):
             mode='one',        reconstruct=True:   (r_atac, r_rna, atac_embeds) — pretrain_missing
             mode='one',        reconstruct=False:  sub_task(out)            — translation / celltype
         """
-        rna_long = torch.round(rna_values).long().clamp(min=0, max=5)
+        rna_long = rna_values.clamp(min=0, max=5).long()
+
 
         if mode == 'multimodal':
             atac_embeds = self._get_atac_features(atac_values)
@@ -105,7 +106,7 @@ class scMomer(nn.Module):
         Returns:
             cell_embeds: [batch, 128] tensor
         """
-        rna_long = torch.round(rna_values).long().clamp(min=0, max=5)
+        rna_long = rna_values.clamp(min=0, max=5).long()
         rna_embeds = self._get_rna_features(rna_long)
         rna_embeds = self.rna_ln(rna_embeds)
         atac_embeds = self.encoder(rna_values)

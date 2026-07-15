@@ -13,7 +13,7 @@ Usage:
         --panglao_path panglao_10000.h5ad --drug_checkpoint output_drug/drug_response_model.pth
 """
 
-import os, sys, argparse, types, logging
+import os, sys, json, argparse, types, logging
 import numpy as np
 from scipy import stats
 
@@ -60,16 +60,24 @@ def build_parser():
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # Data
     p.add_argument("--data_dir", required=True, help="Directory with drug response data files")
-    p.add_argument("--emb_path", default='./cell_emb.npz', help="Pre-computed cell embeddings .npz")
+    p.add_argument("--emb_path", default=None, help="Pre-computed cell embeddings .npz")
     p.add_argument("--panglao_path", default=None, help="Path to panglao_10000.h5ad (Mode 2)")
     p.add_argument("--checkpoint", default=None, help="Pretrained scMomer checkpoint (Mode 2)")
 
     # Models
     p.add_argument("--drug_checkpoint", default='./output_drug/drug_response_model.pth', help="Trained drug response model (.pth)")
+    p.add_argument("--split_file", default=None,
+                   help="split.json saved by train_drug.py. Strongly recommended: "
+                        "guarantees the same test set as training. If omitted, the "
+                        "test set is re-derived with --test_ratio (default 0.05).")
+    p.add_argument("--test_ratio", type=float, default=0.05,
+                   help="Only used when --split_file is not provided; must equal "
+                        "the training-time test_ratio.")
     p.add_argument("--projection_dim", type=int, default=128)
 
     # Task
-    p.add_argument("--classification", action="store_true", default=True)
+    p.add_argument("--classification", action=argparse.BooleanOptionalAction, default=True,
+                   help="Must match the mode used at training time.")
 
     # Eval
     p.add_argument("--batch_size", type=int, default=64)
@@ -94,11 +102,24 @@ def main():
 
     # ---- Load drug features & parse data ----
     drug_feature = load_drug_features(drug_feature_dir)
-    data_idx = parse_drug_response(
-        drug_info_file, cell_line_info_file,
-        cancer_response_file, drug_feature_dir,
-        classification=args.classification, ic50_thred_file=ic50_thred_file)
-    _, _, data_test = split_drug_data(data_idx, seed=args.seed)
+
+    # ---- Test split: prefer the exact split saved at training time ----
+    if args.split_file is not None:
+        with open(args.split_file) as f:
+            split = json.load(f)
+        data_test = [tuple(x) for x in split["test"]]
+        logger.info("Loaded saved split from %s: test=%d (seed=%s, test_ratio=%s)",
+                    args.split_file, len(data_test), split.get("seed"), split.get("test_ratio"))
+    else:
+        logger.warning("--split_file not provided: re-deriving the split with "
+                       "test_ratio=%.2f. This must match training exactly, otherwise "
+                       "results are not comparable.", args.test_ratio)
+        data_idx = parse_drug_response(
+            drug_info_file, cell_line_info_file,
+            cancer_response_file, drug_feature_dir,
+            classification=args.classification, ic50_thred_file=ic50_thred_file)
+        _, _, data_test = split_drug_data(
+            data_idx, val_ratio=0.1, test_ratio=args.test_ratio, seed=args.seed)
 
     # ---- Mode 1: pre-computed embeddings ----
     if args.emb_path is not None:

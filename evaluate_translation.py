@@ -125,9 +125,9 @@ def load_model(checkpoint_path, rna_dim, atac_dim, projection_dim=128,
     clean_sd = {}
     for k, v in sd.items():
         clean_sd[k[7:] if k.startswith('module.') else k] = v
-
+    model.sub_task = d_atac
     model.load_state_dict(clean_sd, strict=False)
-    model.ATAC = d_atac
+
     model = model.to(device)
     model.eval()
 

@@ -59,7 +59,7 @@ class CellDataset(Dataset):
         return torch.from_numpy(x), self.y[idx]
 
 
-def evaluate_classification(features, labels, seed=2024):
+def evaluate_classification(features, labels, seed=42):
     warnings.filterwarnings("ignore", category=UserWarning)
 
     clf = make_pipeline(
@@ -117,7 +117,7 @@ def build_parser():
     p.add_argument("--label_col", default="cell_type", help="Column in obs for labels")
     p.add_argument("--batch_size", type=int, default=16)
     p.add_argument("--projection_dim", type=int, default=128)
-    p.add_argument("--seed", type=int, default=2024)
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--device", type=int, default=1)
     p.add_argument("--save_dir", default="./eval_output/", help="Directory to save results")
     return p
